@@ -67,9 +67,8 @@ plugin.onLoad(function (selfPlugin) {
         self.currentAudioPlayer.addEventListener("play", (e) => {
             self.info.playState = 1;
 
-            legacyNativeCmder.triggerRegisterCall(
-                "PlayState",
-                "audioplayer",
+            triggetRegisteredCallback(
+                "audioplayer.onPlayState",
                 self.currentAudioId[0],
                 self.currentAudioId[1],
                 1,
@@ -79,9 +78,8 @@ plugin.onLoad(function (selfPlugin) {
         self.currentAudioPlayer.addEventListener("pause", (e) => {
             self.info.playState = 2;
 
-            legacyNativeCmder.triggerRegisterCall(
-                "PlayState",
-                "audioplayer",
+            triggetRegisteredCallback(
+                "audioplayer.onPlayState",
                 self.currentAudioId[0],
                 self.currentAudioId[1],
                 2,
@@ -89,9 +87,8 @@ plugin.onLoad(function (selfPlugin) {
         });
 
         self.currentAudioPlayer.addEventListener("canplay", (e) => {
-            legacyNativeCmder.triggerRegisterCall(
-                "PlayProgress",
-                "audioplayer",
+            triggetRegisteredCallback(
+                "audioplayer.onPlayProgress",
                 self.currentAudioId[0],
                 0,
                 0,
@@ -100,7 +97,8 @@ plugin.onLoad(function (selfPlugin) {
             self.info.duration = self.currentAudioPlayer.duration;
             self.info.currentAudioId = self.currentAudioId.join(",");
 
-            window["registeredCalls"]["audioplayer.onLoad"][0](
+            triggetRegisteredCallback(
+                "audioplayer.onLoad",
                 self.currentAudioId[0],
                 {
                     activeCode: 0,
@@ -277,7 +275,11 @@ function PluginMenu() {
                                     </TableCell>
                                     <TableCell align="right">
                                         {row.value.length > 30 ? (
-                                            <TextField id="standard-basic" variant="standard" value={row.value} />
+                                            <TextField
+                                                id="standard-basic"
+                                                variant="standard"
+                                                value={row.value}
+                                            />
                                         ) : (
                                             row.value
                                         )}
