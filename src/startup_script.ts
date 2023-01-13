@@ -7,8 +7,6 @@
  * 请尽量不要使用本脚本来加载东西，否则会大幅度影响加载速度
  * 同时也不要尝试侵入性大的操作，避免网易云崩溃甚至无法打开
  */
-
-import { CONFIG } from ".";
 import { createHookFn } from "./utils";
 
 var registeredCalls = {};
@@ -18,7 +16,7 @@ channel.registerCall = createHookFn(channel.registerCall, (key, fn) => {
     registeredCalls[key].push(fn);
 }).function;
 
-if (true) {
+if (localStorage["libfrontendplay.debug"]==="true") {
     channel.call = createHookFn(channel.call, (name, callback, args) => {
         if (name === "audioplayer.onPlayProgress") return;
 

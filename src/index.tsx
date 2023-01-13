@@ -29,16 +29,15 @@ import {
     Alert,
     AlertTitle,
     Stack,
+    Slider,
 } from "@mui/material";
 import { useEffect, useState } from "react";
 
 let configElement;
 let self: NCMPlugin;
-export const CONFIG = {
-    debug: true,
-};
 
-if (CONFIG.debug) {
+
+if (localStorage["libfrontendplay.debug"]==="true") {
     channel.viewCall().map((v) => {
         const [namespace, fn] = v.split(".");
         if (namespace.includes("audio") || namespace.includes("player"))
@@ -165,28 +164,6 @@ plugin.onLoad(function (selfPlugin) {
         }
         self.currentAudioPlayer = event.detail as typeof Audio;
 
-        setInterval(function () {
-            if (!(self.currentAudioPlayer || self.enabled)) return;
-            if (self.currentAudioPlayer.buffered.length === 0) return;
-
-            const loadProgress =
-                self.currentAudioPlayer.buffered.end(0) /
-                self.currentAudioPlayer.duration;
-            if (
-                self.info.playProgress !== self.currentAudioPlayer.currentTime
-            ) {
-                self.info.playProgress = self.currentAudioPlayer.currentTime;
-                self.info.loadProgress = loadProgress;
-
-                triggetRegisteredCallback(
-                    "audioplayer.onPlayProgress",
-                    self.currentAudioId[0],
-                    self.currentAudioPlayer.currentTime,
-                    loadProgress,
-                );
-            }
-        }, 60);
-
         self.currentAudioPlayer.addEventListener("play", (e) => {
             self.info.playState = 1;
             self.info.lastPlayStartTime = performance.now();
@@ -293,6 +270,18 @@ function PluginMenu() {
         true,
     );
 
+    const [progressCallbackInterval, setProgressCallbackInterval] =
+        useLocalStorage("libfrontendplay.progressCallbackInterval", 100);
+
+    useEffect(() => {
+        if (self.progressCallbackIntervalHandler)
+            clearInterval(self.progressCallbackIntervalHandler);
+        self.progressCallbackIntervalHandler = setInterval(
+            updatePlayProgress,
+            progressCallbackInterval,
+        );
+    }, [progressCallbackInterval]);
+
     useEffect(() => {
         if (enabled) {
             channel.call("audioplayer.pause", () => {}, ["", ""]);
@@ -354,6 +343,28 @@ function PluginMenu() {
                         <strong>部分VIP歌曲播放失败</strong>
                     </Alert>
                 )}
+
+                <div>
+                    <Stack
+                        spacing={2}
+                        direction="row"
+                        sx={{ mb: 1 }}
+                        alignItems="center"
+                    >
+                        <div style={{ minWidth: "6em" }}>进度回调间隔</div>
+                        <Slider
+                            max={500}
+                            min={20}
+                            step={10}
+                            marks
+                            valueLabelDisplay="on"
+                            value={progressCallbackInterval}
+                            onChange={(e, v) => {
+                                setProgressCallbackInterval(v as number);
+                            }}
+                        />
+                    </Stack>
+                </div>
 
                 <div>
                     <Switch
@@ -418,3 +429,23 @@ function PluginMenu() {
 plugin.onConfig(() => {
     return configElement;
 });
+function updatePlayProgress() {
+    if (!self.currentAudioPlayer) return;
+    if (!self.enabled) return;
+    if (self.currentAudioPlayer.buffered.length === 0) return;
+
+    const loadProgress =
+        self.currentAudioPlayer.buffered.end(0) /
+        self.currentAudioPlayer.duration;
+    if (self.info.playProgress !== self.currentAudioPlayer.currentTime) {
+        self.info.playProgress = self.currentAudioPlayer.currentTime;
+        self.info.loadProgress = loadProgress;
+
+        triggetRegisteredCallback(
+            "audioplayer.onPlayProgress",
+            self.currentAudioId[0],
+            self.currentAudioPlayer.currentTime,
+            loadProgress,
+        );
+    }
+}
