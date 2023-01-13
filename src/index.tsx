@@ -110,7 +110,7 @@ plugin.onLoad(function (selfPlugin) {
     //     );
     // });
 
-    // channel.call = 
+    channel.call = 
     createHookFn(channel.call, [
         (name: string, callback: any, [audioId, audioInfo]: any) => {
             if (name !== "audioplayer.load") return;
