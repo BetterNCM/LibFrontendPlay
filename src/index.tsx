@@ -37,6 +37,7 @@ document.body.appendChild(playerElement);
 plugin.onLoad(function (selfPlugin) {
     self = this.mainPlugin;
     self.info = {};
+    self.playedTime = 0;
 
     configElement = document.createElement("div");
     ReactDOM.render(<PluginMenu />, configElement);
@@ -66,6 +67,7 @@ plugin.onLoad(function (selfPlugin) {
 
         self.currentAudioPlayer.addEventListener("play", (e) => {
             self.info.playState = 1;
+            self.info.lastPlayStartTime = performance.now();
 
             triggetRegisteredCallback(
                 "audioplayer.onPlayState",
@@ -75,8 +77,39 @@ plugin.onLoad(function (selfPlugin) {
             );
         });
 
+        self.currentAudioPlayer.addEventListener("end", (e) => {
+            self.playedTime += performance.now() - self.info.lastPlayStartTime;
+
+            triggetRegisteredCallback(
+                "audioplayer.onEnd",
+                self.currentAudioId[0],
+                {
+                    activeCode: 0,
+                    code: 0,
+                    errorCode: 0,
+                    errorString: "",
+                    playedTime: self.playedTime,
+                },
+            );
+
+            triggetRegisteredCallback(
+                "audioplayer.onPlayProgress",
+                self.currentAudioId[0],
+                0,
+                0,
+            );
+
+            // sadly.. using dom api
+            (document.querySelector(".btnc-nxt") as HTMLButtonElement)?.click()
+            self.playedTime = 0;
+            self.info.playedTime = self.playedTime;
+        });
+
         self.currentAudioPlayer.addEventListener("pause", (e) => {
             self.info.playState = 2;
+
+            self.playedTime += performance.now() - self.info.lastPlayStartTime;
+            self.info.playedTime = self.playedTime;
 
             triggetRegisteredCallback(
                 "audioplayer.onPlayState",
@@ -115,27 +148,28 @@ plugin.onLoad(function (selfPlugin) {
         });
     });
 
-    // channel.viewCall().map((v) => {
-    //     const [namespace, fn] = v.split(".");
-    //     if (namespace.includes("audio") || namespace.includes("player"))
-    //         legacyNativeCmder.appendRegisterCall(
-    //             fn.slice(2),
-    //             namespace,
-    //             (...args) => {
-    //                 console.log(v, ...args);
-    //             },
-    //         );
-    //     else
-    //     legacyNativeCmder.appendRegisterCall(
-    //         fn.slice(2),
-    //         namespace,
-    //         (...args) => {
-    //             console.debug(v, ...args);
-    //         },
-    //     );
-    // });
+    channel.viewCall().map((v) => {
+        const [namespace, fn] = v.split(".");
+        if (namespace.includes("audio") || namespace.includes("player"))
+            legacyNativeCmder.appendRegisterCall(
+                fn.slice(2),
+                namespace,
+                (...args) => {
+                    console.log(v, ...args);
+                },
+            );
+        else
+            legacyNativeCmder.appendRegisterCall(
+                fn.slice(2),
+                namespace,
+                (...args) => {
+                    console.debug(v, ...args);
+                },
+            );
+    });
 
-    channel.call = createHookFn(channel.call, [
+    channel.call =
+    createHookFn(channel.call, [
         (name: string, callback: any, [audioId, audioInfo]: any) => {
             if (name !== "audioplayer.load") return;
             self.currentAudioId = [audioId, audioId];
@@ -198,6 +232,15 @@ plugin.onLoad(function (selfPlugin) {
             if (name === "audioplayer.seek") {
                 if (self.currentAudioPlayer)
                     self.currentAudioPlayer.currentTime = args[2];
+
+                triggetRegisteredCallback(
+                    "audioplayer.onSeek",
+                    self.currentAudioId[0],
+                    `${self.currentAudioId[0]}|seek|${Math.random()}`,
+                    0,
+                    self.currentAudioPlayer.currentTime,
+                );
+
                 callback();
                 return { cancel: true };
             }
