@@ -9,18 +9,22 @@ export function createHookFn(
 
 		let prefixResult = {
 			cancel: false,
+			args: undefined
 		};
+
+		let callArgs;
 
 		for (const prefix of prefixs ?? []) {
 			prefixResult = prefix(...args);
-			if(prefixResult.cancel)return;
+			if (prefixResult?.cancel) return;
+			if (prefixResult?.args) callArgs = callArgs ?? prefixResult?.args;
 		}
-
+		if(callArgs)console.log(callArgs,args)
 		let result;
-		if (!prefixResult.cancel) result = fn.apply(this, args);
+		result = fn.apply(this, callArgs ?? args);
 
 		for (const postfix of postfixs ?? []) {
-			result = postfix?.apply(result, ...args) ?? result;
+			result = postfix?.apply(result, args) ?? result;
 		}
 
 		return result;

@@ -22,6 +22,7 @@ declare module "betterncm-api/fs" {
          * @param zipPath 需要解压的 ZIP 压缩文件路径
          * @param unzipDest 需要解压到的文件夹路径，如果不存在则会创建，如果解压时有文件存在则会被覆盖
          */
+         function readFile(filePath: string): Promise<Blob>;
         function unzip(zipPath: string, unzipDest?: string): Promise<boolean>;
         /**
          * 将文本写入到指定文件内
@@ -240,6 +241,7 @@ declare module "plugin" {
         };
     }
     export class NCMPlugin extends EventTarget {
+        [x: string]: any;
         pluginPath: string;
         injects: NCMInjectPlugin[];
         manifest: PluginManifest;
@@ -248,6 +250,7 @@ declare module "plugin" {
         haveConfigElement(): boolean;
     }
     export class NCMInjectPlugin extends EventTarget {
+        [x: string]: any;
         readonly filePath: string;
         pluginPath: string;
         manifest: PluginManifest;
@@ -287,7 +290,7 @@ interface EAPILyricResponse extends EAPIResponse {
     yrc?: EAPILyric;
 }
 
-declare var loadedPlugins: import("plugin").NCMInjectPlugin[];
+declare var loadedPlugins: { [slug: string]: import("plugin").NCMInjectPlugin };
 declare var pluginPath: string;
 declare var plugin: import("plugin").NCMInjectPlugin;
 declare const betterncm: typeof import("betterncm-api/index").default;
@@ -298,3 +301,5 @@ declare const ReactDOM: typeof import("react-dom");
 declare const DEBUG: boolean;
 declare var betterncm_native: any;
 declare var channel: any;
+declare var legacyNativeCmder: any;
+declare var registeredCalls:{[id:string]:Function[]}

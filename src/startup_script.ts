@@ -7,3 +7,12 @@
  * 请尽量不要使用本脚本来加载东西，否则会大幅度影响加载速度
  * 同时也不要尝试侵入性大的操作，避免网易云崩溃甚至无法打开
  */
+
+import { createHookFn } from "./utils";
+
+var registeredCalls = {};
+window["registeredCalls"]=registeredCalls;
+channel.registerCall = createHookFn(channel.registerCall, (key, fn) => {
+    registeredCalls[key]??=[]
+    registeredCalls[key].push(fn);
+})
