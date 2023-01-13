@@ -168,7 +168,7 @@ plugin.onLoad(function (selfPlugin) {
         setInterval(function () {
             if (!(self.currentAudioPlayer || self.enabled)) return;
             if (self.currentAudioPlayer.buffered.length === 0) return;
-            
+
             const loadProgress =
                 self.currentAudioPlayer.buffered.end(0) /
                 self.currentAudioPlayer.duration;
@@ -185,7 +185,7 @@ plugin.onLoad(function (selfPlugin) {
                     loadProgress,
                 );
             }
-        }, 20);
+        }, 60);
 
         self.currentAudioPlayer.addEventListener("play", (e) => {
             self.info.playState = 1;
