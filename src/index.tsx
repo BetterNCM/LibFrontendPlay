@@ -181,7 +181,7 @@ plugin.onLoad(function (selfPlugin) {
             );
         });
 
-        self.currentAudioPlayer.addEventListener("end", (e) => {
+        self.currentAudioPlayer.addEventListener("ended", (e) => {
             self.playedTime += performance.now() - self.info.lastPlayStartTime;
 
             triggetRegisteredCallback(
@@ -203,8 +203,6 @@ plugin.onLoad(function (selfPlugin) {
                 0,
             );
 
-            // sadly.. using dom api
-            (document.querySelector(".btnc-nxt") as HTMLButtonElement)?.click();
             self.playedTime = 0;
             self.info.playedTime = self.playedTime;
         });
