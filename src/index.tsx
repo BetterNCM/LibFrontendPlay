@@ -360,7 +360,7 @@ function PluginMenu() {
                             min={20}
                             step={10}
                             marks
-                            valueLabelDisplay="on"
+                            valueLabelDisplay="auto"
                             value={progressCallbackInterval}
                             onChange={(e, v) => {
                                 setProgressCallbackInterval(v as number);
