@@ -124,15 +124,16 @@ const hookedNativeCallFunction = createHookFn(channel.call, [
             if (self.currentAudioPlayer)
                 self.currentAudioPlayer.currentTime = args[2];
 
+            callback();
+
             triggetRegisteredCallback(
                 "audioplayer.onSeek",
                 self.currentAudioId[0],
-                `${self.currentAudioId[0]}|seek|${Math.random()}`,
+                `${self.currentAudioId[0]}|seek|abcde`,
                 0,
-                self.currentAudioPlayer.currentTime,
+                args[2],
             );
 
-            callback();
             return { cancel: true };
         }
     },
@@ -153,21 +154,26 @@ plugin.onLoad(function (selfPlugin) {
         }
         self.currentAudioPlayer = event.detail as typeof Audio;
 
-        self.currentAudioPlayer.addEventListener("timeupdate", (e) => {
+        setInterval(function () {
+            if (!self.currentAudioPlayer) return;
+
             const loadProgress =
                 self.currentAudioPlayer.buffered.end(0) /
                 self.currentAudioPlayer.duration;
+            if (
+                self.info.playProgress !== self.currentAudioPlayer.currentTime
+            ) {
+                self.info.playProgress = self.currentAudioPlayer.currentTime;
+                self.info.loadProgress = loadProgress;
 
-            self.info.playProgress = self.currentAudioPlayer.currentTime;
-            self.info.loadProgress = loadProgress;
-
-            triggetRegisteredCallback(
-                "audioplayer.onPlayProgress",
-                self.currentAudioId[0],
-                self.currentAudioPlayer.currentTime,
-                loadProgress,
-            );
-        });
+                triggetRegisteredCallback(
+                    "audioplayer.onPlayProgress",
+                    self.currentAudioId[0],
+                    self.currentAudioPlayer.currentTime,
+                    loadProgress,
+                );
+            }
+        }, 20);
 
         self.currentAudioPlayer.addEventListener("play", (e) => {
             self.info.playState = 1;
