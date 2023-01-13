@@ -26,6 +26,9 @@ import {
     TableRow,
     TextField,
     Switch,
+    Alert,
+    AlertTitle,
+    Stack,
 } from "@mui/material";
 import { useEffect, useState } from "react";
 
@@ -137,12 +140,20 @@ const hookedNativeCallFunction = createHookFn(channel.call, [
             return { cancel: true };
         }
     },
+    (name, callback, args) => {
+        if (
+            name === "winhelper.setNativeWindowShow" &&
+            args[0] === "desktop_lyrics"
+        )
+            return { args: [name, callback, [args[0], false, args[2]]] };
+    },
 ]);
 
 plugin.onLoad(function (selfPlugin) {
     self = this.mainPlugin;
     self.info = {};
     self.playedTime = 0;
+    self.enabled = true;
 
     configElement = document.createElement("div");
     ReactDOM.render(<PluginMenu />, configElement);
@@ -155,8 +166,9 @@ plugin.onLoad(function (selfPlugin) {
         self.currentAudioPlayer = event.detail as typeof Audio;
 
         setInterval(function () {
-            if (!self.currentAudioPlayer) return;
-
+            if (!(self.currentAudioPlayer || self.enabled)) return;
+            if (self.currentAudioPlayer.buffered.length === 0) return;
+            
             const loadProgress =
                 self.currentAudioPlayer.buffered.end(0) /
                 self.currentAudioPlayer.duration;
@@ -285,12 +297,14 @@ function PluginMenu() {
         if (enabled) {
             channel.call("audioplayer.pause", () => {}, ["", ""]);
             channel.call = hookedNativeCallFunction.function;
+            self.enabled = true;
         } else {
             self.dispatchEvent(
                 new CustomEvent("updateCurrentAudioPlayer", {
                     detail: new Audio(),
                 }),
             );
+            self.enabled = false;
             channel.call = hookedNativeCallFunction.origin;
         }
     }, [enabled]);
@@ -325,60 +339,78 @@ function PluginMenu() {
 
     return (
         <>
-            <div>
-                <Switch
-                    name="启用"
-                    checked={enabled}
-                    onChange={(e, checked) => setEnabled(checked)}
-                />
-                <span>启用</span>
+            <Stack spacing={2}>
+                {enabled && (
+                    <Alert severity="warning">
+                        <AlertTitle>注意</AlertTitle>
+                        网易云自带桌面歌词将<strong>不可用</strong>
+                    </Alert>
+                )}
 
-                <Switch
-                    name="禁用NCM缓存"
-                    checked={disableNCMCache}
-                    onChange={(e, checked) => setDisableNCMCache(checked)}
-                />
-                <span>禁用NCM缓存</span>
-            </div>
-            <div>
-                <TableContainer component={Paper}>
-                    <Table sx={{ minWidth: 250 }}>
-                        <TableHead>
-                            <TableRow>
-                                <TableCell>类型</TableCell>
-                                <TableCell align="right">值</TableCell>
-                            </TableRow>
-                        </TableHead>
-                        <TableBody>
-                            {rows.map((row) => (
-                                <TableRow
-                                    key={row.name}
-                                    sx={{
-                                        "&:last-child td, &:last-child th": {
-                                            border: 0,
-                                        },
-                                    }}
-                                >
-                                    <TableCell component="th" scope="row">
-                                        {row.name}
-                                    </TableCell>
-                                    <TableCell align="right">
-                                        {row.value.length > 30 ? (
-                                            <TextField
-                                                id="standard-basic"
-                                                variant="standard"
-                                                value={row.value}
-                                            />
-                                        ) : (
-                                            row.value
-                                        )}
-                                    </TableCell>
+                {enabled && !disableNCMCache && (
+                    <Alert severity="warning">
+                        <AlertTitle>注意</AlertTitle>
+                        启用网易云音乐缓存可能会导致
+                        <strong>部分VIP歌曲播放失败</strong>
+                    </Alert>
+                )}
+
+                <div>
+                    <Switch
+                        name="启用"
+                        checked={enabled}
+                        onChange={(e, checked) => setEnabled(checked)}
+                    />
+                    <span>启用</span>
+
+                    <Switch
+                        name="禁用NCM缓存"
+                        checked={disableNCMCache}
+                        onChange={(e, checked) => setDisableNCMCache(checked)}
+                    />
+                    <span>禁用NCM缓存</span>
+                </div>
+                <div>
+                    <TableContainer component={Paper}>
+                        <Table sx={{ minWidth: 250 }}>
+                            <TableHead>
+                                <TableRow>
+                                    <TableCell>类型</TableCell>
+                                    <TableCell align="right">值</TableCell>
                                 </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </TableContainer>
-            </div>
+                            </TableHead>
+                            <TableBody>
+                                {rows.map((row) => (
+                                    <TableRow
+                                        key={row.name}
+                                        sx={{
+                                            "&:last-child td, &:last-child th":
+                                                {
+                                                    border: 0,
+                                                },
+                                        }}
+                                    >
+                                        <TableCell component="th" scope="row">
+                                            {row.name}
+                                        </TableCell>
+                                        <TableCell align="right">
+                                            {row.value.length > 30 ? (
+                                                <TextField
+                                                    id="standard-basic"
+                                                    variant="standard"
+                                                    value={row.value}
+                                                />
+                                            ) : (
+                                                row.value
+                                            )}
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </TableContainer>
+                </div>
+            </Stack>
         </>
     );
 }

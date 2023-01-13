@@ -20,6 +20,8 @@ channel.registerCall = createHookFn(channel.registerCall, (key, fn) => {
 
 if (true) {
     channel.call = createHookFn(channel.call, (name, callback, args) => {
+        if (name === "audioplayer.onPlayProgress") return;
+
         if (name.includes("audio") || name.includes("player"))
             console.log(name, callback, args);
         else console.debug(name, callback, args);
