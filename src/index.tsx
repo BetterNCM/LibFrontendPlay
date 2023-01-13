@@ -17,14 +17,8 @@ document.body.appendChild(playerElement);
 
 plugin.onLoad(function (selfPlugin) {
     self = this.mainPlugin;
-    console.log(self, this);
     configElement = document.createElement("div");
     ReactDOM.render(<Menu />, configElement);
-
-    // setInterval(()=>{
-    //     if(self.currentAudioPlayer)
-
-    // },10);
 
     self.addEventListener("updateCurrentAudioPlayer", (event: CustomEvent) => {
         if (self.currentAudioPlayer) {
@@ -87,7 +81,7 @@ plugin.onLoad(function (selfPlugin) {
                 {
                     activeCode: 0,
                     code: 0,
-                    duration: 200.0000000101010101,
+                    duration: 100,
                     errorCode: 0,
                     errorString: "",
                 },
@@ -116,7 +110,8 @@ plugin.onLoad(function (selfPlugin) {
     //     );
     // });
 
-    channel.call = createHookFn(channel.call, [
+    // channel.call = 
+    createHookFn(channel.call, [
         (name: string, callback: any, [audioId, audioInfo]: any) => {
             if (name !== "audioplayer.load") return;
             self.currentAudioId = [audioId, audioId];
@@ -140,12 +135,32 @@ plugin.onLoad(function (selfPlugin) {
                         }),
                     );
                 });
-            else
-                self.dispatchEvent(
-                    new CustomEvent("updateCurrentAudioPlayer", {
-                        detail: new Audio(musicurl),
-                    }),
+            else {
+                channel.call(
+                    "browser.getFullCookies",
+                    async (cookiesObj) => {
+                        const cookies = cookiesObj
+                            .map((v) => `${v.Name}=${v.Value}`)
+                            .join(";");
+                        
+                        self.dispatchEvent(
+                            new CustomEvent("updateCurrentAudioPlayer", {
+                                detail: new Audio(
+                                    // URL.createObjectURL(
+                                    //     await (
+                                    //         await fetch(`http://localhost:2017/${
+                                    //             musicurl.slice(7) /*http://*/
+                                    //         }?xymod=2&xyssl=1`, { headers: { cookies } })
+                                    //     ).blob(),
+                                    // )
+                                    musicurl
+                                ),
+                            }),
+                        );
+                    },
+                    [APP_CONF.domain],
                 );
+            }
             return { cancel: true };
         },
         (name, callback, args) => {
@@ -158,18 +173,6 @@ plugin.onLoad(function (selfPlugin) {
         },
         (name, callback, args) => {
             if (name === "audioplayer.play") {
-                // if(self.currentAudioId[0]===self.currentAudioId[1]){
-                //     registeredCalls["audioplayer.onLoad"][0](
-                //         self.currentAudioId[0],
-                //         {
-                //             activeCode: 0,
-                //             code: 0,
-                //             duration: 200.0000000101010101,
-                //             errorCode: 0,
-                //             errorString: "",
-                //         }, );
-                // }
-
                 self.currentAudioId = [args[0], args[1]];
                 if (self.currentAudioPlayer) self.currentAudioPlayer.play();
 
@@ -192,7 +195,8 @@ plugin.onLoad(function (selfPlugin) {
         },
     ]);
 
-    channel.call = createHookFn(channel.call, (name, callback, args) => {
+    channel.call = 
+    createHookFn(channel.call, (name, callback, args) => {
         console.debug(name);
         if (name.includes("audio") || name.includes("player")) {
             console.log(name, callback, args);

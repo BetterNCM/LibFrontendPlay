@@ -303,3 +303,4 @@ declare var betterncm_native: any;
 declare var channel: any;
 declare var legacyNativeCmder: any;
 declare var registeredCalls:{[id:string]:Function[]}
+declare var APP_CONF:any;
