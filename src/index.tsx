@@ -36,8 +36,7 @@ import { useEffect, useState } from "react";
 let configElement;
 let self: NCMPlugin;
 
-
-if (localStorage["libfrontendplay.debug"]==="true") {
+if (localStorage["libfrontendplay.debug"] === "true") {
     channel.viewCall().map((v) => {
         const [namespace, fn] = v.split(".");
         if (namespace.includes("audio") || namespace.includes("player"))
@@ -226,7 +225,7 @@ plugin.onLoad(function (selfPlugin) {
             self.info.duration = self.currentAudioPlayer.duration;
             self.info.currentAudioId = self.currentAudioId.join(",");
 
-            self.currentAudioPlayer.play()
+            self.currentAudioPlayer.play();
         });
 
         self.currentAudioPlayer.addEventListener("loadedmetadata", (e) => {
@@ -348,28 +347,6 @@ function PluginMenu() {
                 )}
 
                 <div>
-                    <Stack
-                        spacing={2}
-                        direction="row"
-                        sx={{ mb: 1 }}
-                        alignItems="center"
-                    >
-                        <div style={{ minWidth: "6em" }}>进度回调间隔</div>
-                        <Slider
-                            max={500}
-                            min={20}
-                            step={10}
-                            marks
-                            valueLabelDisplay="auto"
-                            value={progressCallbackInterval}
-                            onChange={(e, v) => {
-                                setProgressCallbackInterval(v as number);
-                            }}
-                        />
-                    </Stack>
-                </div>
-
-                <div>
                     <Switch
                         name="启用"
                         checked={enabled}
@@ -384,6 +361,29 @@ function PluginMenu() {
                     />
                     <span>禁用NCM缓存</span>
                 </div>
+
+                {enabled && (
+                    <Stack
+                        spacing={2}
+                        direction="row"
+                        sx={{ mb: 1 }}
+                        alignItems="center"
+                    >
+                        <div style={{ minWidth: "6em" }}>进度回调间隔</div>
+                        <Slider
+                            max={500}
+                            min={20}
+                            step={10}
+                            size="medium"
+                            valueLabelDisplay="auto"
+                            value={progressCallbackInterval}
+                            onChange={(e, v) => {
+                                setProgressCallbackInterval(v as number);
+                            }}
+                        />
+                    </Stack>
+                )}
+
                 <div>
                     <TableContainer component={Paper}>
                         <Table sx={{ minWidth: 250 }}>
