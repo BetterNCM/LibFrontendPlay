@@ -1,3 +1,6 @@
+import * as React from "react";
+import { useState } from "react";
+
 export function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T | ((prevValue: T) => T)) => void] {
     const [storedValue, setStoredValue] = React.useState(() => {
       try {
@@ -21,3 +24,8 @@ export function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T 
   
     return [storedValue, setValue];
   }
+
+export function useForceUpdate(){
+    const [value, setValue] = useState(0); 
+    return () => setValue(value => value + 1); 
+}

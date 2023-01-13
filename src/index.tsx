@@ -6,9 +6,28 @@
 
 import { Container } from "react-dom";
 import { NCMPlugin } from "plugin";
-import { useLocalStorage } from "./hooks";
+import { useForceUpdate, useLocalStorage } from "./hooks";
 import "./index.scss";
+import Button from "@mui/material/Button";
 import { createHookFn } from "./utils";
+import * as ReactDOM from "react-dom";
+import Accordion from "@mui/material/Accordion";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import {
+    AccordionSummary,
+    Typography,
+    AccordionDetails,
+    Paper,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
+    TextField,
+} from "@mui/material";
+import { useEffect, useState } from "react";
+
 let configElement;
 let self: NCMPlugin;
 
@@ -17,8 +36,10 @@ document.body.appendChild(playerElement);
 
 plugin.onLoad(function (selfPlugin) {
     self = this.mainPlugin;
+    self.info = {};
+
     configElement = document.createElement("div");
-    ReactDOM.render(<Menu />, configElement);
+    ReactDOM.render(<PluginMenu />, configElement);
 
     self.addEventListener("updateCurrentAudioPlayer", (event: CustomEvent) => {
         if (self.currentAudioPlayer) {
@@ -28,26 +49,24 @@ plugin.onLoad(function (selfPlugin) {
         self.currentAudioPlayer = event.detail as typeof Audio;
 
         self.currentAudioPlayer.addEventListener("timeupdate", (e) => {
-            registeredCalls["audioplayer.onPlayProgress"].map((fn) =>
-                fn(
-                    self.currentAudioId[0],
-                    self.currentAudioPlayer.currentTime,
-                    self.currentAudioPlayer.buffered.end(0) /
-                        self.currentAudioPlayer.duration,
-                ),
-            );
-
-            legacyNativeCmder.triggerRegisterCall(
-                "PlayProgress",
-                "audioplayer",
-                self.currentAudioId[0],
-                Math.round(self.currentAudioPlayer.currentTime * 100) / 100,
+            const loadProgress =
                 self.currentAudioPlayer.buffered.end(0) /
-                    self.currentAudioPlayer.duration,
+                self.currentAudioPlayer.duration;
+
+            self.info.playProgress = self.currentAudioPlayer.currentTime;
+            self.info.loadProgress = loadProgress;
+
+            triggetRegisteredCallback(
+                "audioplayer.onPlayProgress",
+                self.currentAudioId[0],
+                self.currentAudioPlayer.currentTime,
+                loadProgress,
             );
         });
 
         self.currentAudioPlayer.addEventListener("play", (e) => {
+            self.info.playState = 1;
+
             legacyNativeCmder.triggerRegisterCall(
                 "PlayState",
                 "audioplayer",
@@ -58,6 +77,8 @@ plugin.onLoad(function (selfPlugin) {
         });
 
         self.currentAudioPlayer.addEventListener("pause", (e) => {
+            self.info.playState = 2;
+
             legacyNativeCmder.triggerRegisterCall(
                 "PlayState",
                 "audioplayer",
@@ -76,6 +97,9 @@ plugin.onLoad(function (selfPlugin) {
                 0,
             );
 
+            self.info.duration = self.currentAudioPlayer.duration;
+            self.info.currentAudioId = self.currentAudioId.join(",");
+
             window["registeredCalls"]["audioplayer.onLoad"][0](
                 self.currentAudioId[0],
                 {
@@ -86,7 +110,10 @@ plugin.onLoad(function (selfPlugin) {
                     errorString: "",
                 },
             );
-            // self.currentAudioPlayer.play();
+        });
+
+        self.currentAudioPlayer.addEventListener("error", (e) => {
+            self.info.lastError = e.toString();
         });
     });
 
@@ -110,8 +137,7 @@ plugin.onLoad(function (selfPlugin) {
     //     );
     // });
 
-    channel.call = 
-    createHookFn(channel.call, [
+    channel.call = createHookFn(channel.call, [
         (name: string, callback: any, [audioId, audioInfo]: any) => {
             if (name !== "audioplayer.load") return;
             self.currentAudioId = [audioId, audioId];
@@ -127,7 +153,8 @@ plugin.onLoad(function (selfPlugin) {
                 songId,
             } = audioInfo;
 
-            if (path)
+            if (path) {
+                self.info.url = `(local) ${path}`;
                 betterncm.fs.readFile(path).then((file) => {
                     self.dispatchEvent(
                         new CustomEvent("updateCurrentAudioPlayer", {
@@ -135,30 +162,12 @@ plugin.onLoad(function (selfPlugin) {
                         }),
                     );
                 });
-            else {
-                channel.call(
-                    "browser.getFullCookies",
-                    async (cookiesObj) => {
-                        const cookies = cookiesObj
-                            .map((v) => `${v.Name}=${v.Value}`)
-                            .join(";");
-                        
-                        self.dispatchEvent(
-                            new CustomEvent("updateCurrentAudioPlayer", {
-                                detail: new Audio(
-                                    // URL.createObjectURL(
-                                    //     await (
-                                    //         await fetch(`http://localhost:2017/${
-                                    //             musicurl.slice(7) /*http://*/
-                                    //         }?xymod=2&xyssl=1`, { headers: { cookies } })
-                                    //     ).blob(),
-                                    // )
-                                    musicurl
-                                ),
-                            }),
-                        );
-                    },
-                    [APP_CONF.domain],
+            } else {
+                self.info.url = `(online) ${musicurl}`;
+                self.dispatchEvent(
+                    new CustomEvent("updateCurrentAudioPlayer", {
+                        detail: new Audio(musicurl),
+                    }),
                 );
             }
             return { cancel: true };
@@ -191,14 +200,13 @@ plugin.onLoad(function (selfPlugin) {
             if (name === "audioplayer.seek") {
                 if (self.currentAudioPlayer)
                     self.currentAudioPlayer.currentTime = args[2];
-                    callback();
+                callback();
                 return { cancel: true };
             }
         },
     ]);
 
-    channel.call = 
-    createHookFn(channel.call, (name, callback, args) => {
+    channel.call = createHookFn(channel.call, (name, callback, args) => {
         console.debug(name);
         if (name.includes("audio") || name.includes("player")) {
             console.log(name, callback, args);
@@ -215,8 +223,73 @@ plugin.onLoad(function (selfPlugin) {
     });
 });
 
-function Menu() {
-    return <></>;
+function triggetRegisteredCallback(name, ...args) {
+    registeredCalls[name].map((fn) => fn(...args));
+
+    const [namespace, fn] = name.split(".");
+    legacyNativeCmder.triggerRegisterCall(fn.slice(2), namespace, ...args);
+}
+
+function PluginMenu() {
+    const forceUpdate = useForceUpdate();
+
+    const [rows, setRows] = useState([
+        {
+            name: "无",
+            value: "无",
+        },
+    ]);
+
+    useEffect(() => {
+        setInterval(() => {
+            setRows(
+                Object.entries(self.info).map(([name, value]) => ({
+                    name,
+                    value: value as string,
+                })),
+            );
+        }, 200);
+    }, []);
+
+    return (
+        <>
+            <div>
+                <TableContainer component={Paper}>
+                    <Table sx={{ minWidth: 250 }}>
+                        <TableHead>
+                            <TableRow>
+                                <TableCell>类型</TableCell>
+                                <TableCell align="right">值</TableCell>
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
+                            {rows.map((row) => (
+                                <TableRow
+                                    key={row.name}
+                                    sx={{
+                                        "&:last-child td, &:last-child th": {
+                                            border: 0,
+                                        },
+                                    }}
+                                >
+                                    <TableCell component="th" scope="row">
+                                        {row.name}
+                                    </TableCell>
+                                    <TableCell align="right">
+                                        {row.value.length > 30 ? (
+                                            <TextField id="standard-basic" variant="standard" value={row.value} />
+                                        ) : (
+                                            row.value
+                                        )}
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </TableContainer>
+            </div>
+        </>
+    );
 }
 
 plugin.onConfig(() => {
