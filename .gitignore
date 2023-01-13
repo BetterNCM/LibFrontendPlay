@@ -3,4 +3,4 @@ node_modules/
 /yarn.lock
 /index.js
 /index.css
-/startup_script.js
+startup_script.js
