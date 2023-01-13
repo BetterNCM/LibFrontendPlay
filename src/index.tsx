@@ -316,7 +316,7 @@ function PluginMenu() {
                 "0",
                 "",
             ]);
-            channel.call("storage.clearCache", (...v) => console.log(v), []);
+            channel.call("storage.clearCache", (...v) => console.log(v), [""]);
         } else {
             channel.call("storage.init", (...v) => console.log(v), [
                 "",
