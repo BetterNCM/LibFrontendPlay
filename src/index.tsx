@@ -81,7 +81,7 @@ plugin.onLoad(function (selfPlugin) {
                 {
                     activeCode: 0,
                     code: 0,
-                    duration: 100,
+                    duration: self.currentAudioPlayer.duration,
                     errorCode: 0,
                     errorString: "",
                 },
@@ -183,6 +183,7 @@ plugin.onLoad(function (selfPlugin) {
         (name, callback, args) => {
             if (name === "audioplayer.pause") {
                 if (self.currentAudioPlayer) self.currentAudioPlayer.pause();
+                callback();
                 return { cancel: true };
             }
         },
@@ -190,6 +191,7 @@ plugin.onLoad(function (selfPlugin) {
             if (name === "audioplayer.seek") {
                 if (self.currentAudioPlayer)
                     self.currentAudioPlayer.currentTime = args[2];
+                    callback();
                 return { cancel: true };
             }
         },
