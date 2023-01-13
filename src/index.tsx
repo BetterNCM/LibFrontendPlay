@@ -109,7 +109,6 @@ const hookedNativeCallFunction = createHookFn(channel.call, [
         if (name === "audioplayer.play") {
             self.currentAudioId = [args[0], args[1]];
             if (self.currentAudioPlayer) self.currentAudioPlayer.play();
-
             callback();
             return { cancel: true };
         }
@@ -128,7 +127,7 @@ const hookedNativeCallFunction = createHookFn(channel.call, [
 
             callback();
 
-            triggetRegisteredCallback(
+            triggerRegisteredCallback(
                 "audioplayer.onSeek",
                 self.currentAudioId[0],
                 `${self.currentAudioId[0]}|seek|abcde`,
@@ -168,7 +167,7 @@ plugin.onLoad(function (selfPlugin) {
             self.info.playState = 1;
             self.info.lastPlayStartTime = performance.now();
 
-            triggetRegisteredCallback(
+            triggerRegisteredCallback(
                 "audioplayer.onPlayState",
                 self.currentAudioId[0],
                 self.currentAudioId[1],
@@ -179,7 +178,7 @@ plugin.onLoad(function (selfPlugin) {
         self.currentAudioPlayer.addEventListener("ended", (e) => {
             self.playedTime += performance.now() - self.info.lastPlayStartTime;
 
-            triggetRegisteredCallback(
+            triggerRegisteredCallback(
                 "audioplayer.onEnd",
                 self.currentAudioId[0],
                 {
@@ -191,7 +190,7 @@ plugin.onLoad(function (selfPlugin) {
                 },
             );
 
-            triggetRegisteredCallback(
+            triggerRegisteredCallback(
                 "audioplayer.onPlayProgress",
                 self.currentAudioId[0],
                 0,
@@ -208,7 +207,7 @@ plugin.onLoad(function (selfPlugin) {
             self.playedTime += performance.now() - self.info.lastPlayStartTime;
             self.info.playedTime = self.playedTime;
 
-            triggetRegisteredCallback(
+            triggerRegisteredCallback(
                 "audioplayer.onPlayState",
                 self.currentAudioId[0],
                 self.currentAudioId[1],
@@ -217,7 +216,7 @@ plugin.onLoad(function (selfPlugin) {
         });
 
         self.currentAudioPlayer.addEventListener("canplay", (e) => {
-            triggetRegisteredCallback(
+            triggerRegisteredCallback(
                 "audioplayer.onPlayProgress",
                 self.currentAudioId[0],
                 0,
@@ -227,7 +226,11 @@ plugin.onLoad(function (selfPlugin) {
             self.info.duration = self.currentAudioPlayer.duration;
             self.info.currentAudioId = self.currentAudioId.join(",");
 
-            triggetRegisteredCallback(
+            self.currentAudioPlayer.play()
+        });
+
+        self.currentAudioPlayer.addEventListener("loadedmetadata", (e) => {
+            triggerRegisteredCallback(
                 "audioplayer.onLoad",
                 self.currentAudioId[0],
                 {
@@ -246,7 +249,7 @@ plugin.onLoad(function (selfPlugin) {
     });
 });
 
-function triggetRegisteredCallback(name, ...args) {
+function triggerRegisteredCallback(name, ...args) {
     registeredCalls[name].map((fn) => fn(...args));
 
     const [namespace, fn] = name.split(".");
@@ -441,7 +444,7 @@ function updatePlayProgress() {
         self.info.playProgress = self.currentAudioPlayer.currentTime;
         self.info.loadProgress = loadProgress;
 
-        triggetRegisteredCallback(
+        triggerRegisteredCallback(
             "audioplayer.onPlayProgress",
             self.currentAudioId[0],
             self.currentAudioPlayer.currentTime,
