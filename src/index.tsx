@@ -25,14 +25,118 @@ import {
     TableHead,
     TableRow,
     TextField,
+    Switch,
 } from "@mui/material";
 import { useEffect, useState } from "react";
 
 let configElement;
 let self: NCMPlugin;
+export const CONFIG = {
+    debug: true,
+};
+
+if (CONFIG.debug) {
+    channel.viewCall().map((v) => {
+        const [namespace, fn] = v.split(".");
+        if (namespace.includes("audio") || namespace.includes("player"))
+            legacyNativeCmder.appendRegisterCall(
+                fn.slice(2),
+                namespace,
+                (...args) => {
+                    console.log(v, ...args);
+                },
+            );
+        else
+            legacyNativeCmder.appendRegisterCall(
+                fn.slice(2),
+                namespace,
+                (...args) => {
+                    console.debug(v, ...args);
+                },
+            );
+    });
+}
 
 const playerElement = document.createElement("div");
 document.body.appendChild(playerElement);
+
+const hookedNativeCallFunction = createHookFn(channel.call, [
+    (name: string, callback: any, [audioId, audioInfo]: any) => {
+        if (name !== "audioplayer.load") return;
+        self.currentAudioId = [audioId, audioId];
+        let {
+            bitrate,
+            fileSize,
+            format,
+            level,
+            musicurl,
+            path,
+            md5,
+            playId,
+            songId,
+        } = audioInfo;
+
+        if (path) {
+            self.info.url = `(local) ${path}`;
+            betterncm.fs.readFile(path).then((file) => {
+                self.dispatchEvent(
+                    new CustomEvent("updateCurrentAudioPlayer", {
+                        detail: new Audio(URL.createObjectURL(file)),
+                    }),
+                );
+            });
+        } else {
+            self.info.url = `(online) ${musicurl}`;
+            self.dispatchEvent(
+                new CustomEvent("updateCurrentAudioPlayer", {
+                    detail: new Audio(musicurl),
+                }),
+            );
+        }
+        return { cancel: true };
+    },
+    (name, callback, args) => {
+        if (name === "audioplayer.setVolume") {
+            if (self.currentAudioPlayer)
+                self.currentAudioPlayer.volume = args[2];
+            callback(true);
+            return { cancel: true };
+        }
+    },
+    (name, callback, args) => {
+        if (name === "audioplayer.play") {
+            self.currentAudioId = [args[0], args[1]];
+            if (self.currentAudioPlayer) self.currentAudioPlayer.play();
+
+            callback();
+            return { cancel: true };
+        }
+    },
+    (name, callback, args) => {
+        if (name === "audioplayer.pause") {
+            if (self.currentAudioPlayer) self.currentAudioPlayer.pause();
+            callback();
+            return { cancel: true };
+        }
+    },
+    (name, callback, args) => {
+        if (name === "audioplayer.seek") {
+            if (self.currentAudioPlayer)
+                self.currentAudioPlayer.currentTime = args[2];
+
+            triggetRegisteredCallback(
+                "audioplayer.onSeek",
+                self.currentAudioId[0],
+                `${self.currentAudioId[0]}|seek|${Math.random()}`,
+                0,
+                self.currentAudioPlayer.currentTime,
+            );
+
+            callback();
+            return { cancel: true };
+        }
+    },
+]);
 
 plugin.onLoad(function (selfPlugin) {
     self = this.mainPlugin;
@@ -100,7 +204,7 @@ plugin.onLoad(function (selfPlugin) {
             );
 
             // sadly.. using dom api
-            (document.querySelector(".btnc-nxt") as HTMLButtonElement)?.click()
+            (document.querySelector(".btnc-nxt") as HTMLButtonElement)?.click();
             self.playedTime = 0;
             self.info.playedTime = self.playedTime;
         });
@@ -144,123 +248,8 @@ plugin.onLoad(function (selfPlugin) {
         });
 
         self.currentAudioPlayer.addEventListener("error", (e) => {
-            self.info.lastError = e.toString();
+            self.info.lastError = e.currentTarget.error.code;
         });
-    });
-
-    channel.viewCall().map((v) => {
-        const [namespace, fn] = v.split(".");
-        if (namespace.includes("audio") || namespace.includes("player"))
-            legacyNativeCmder.appendRegisterCall(
-                fn.slice(2),
-                namespace,
-                (...args) => {
-                    console.log(v, ...args);
-                },
-            );
-        else
-            legacyNativeCmder.appendRegisterCall(
-                fn.slice(2),
-                namespace,
-                (...args) => {
-                    console.debug(v, ...args);
-                },
-            );
-    });
-
-    channel.call =
-    createHookFn(channel.call, [
-        (name: string, callback: any, [audioId, audioInfo]: any) => {
-            if (name !== "audioplayer.load") return;
-            self.currentAudioId = [audioId, audioId];
-            let {
-                bitrate,
-                fileSize,
-                format,
-                level,
-                musicurl,
-                path,
-                md5,
-                playId,
-                songId,
-            } = audioInfo;
-
-            if (path) {
-                self.info.url = `(local) ${path}`;
-                betterncm.fs.readFile(path).then((file) => {
-                    self.dispatchEvent(
-                        new CustomEvent("updateCurrentAudioPlayer", {
-                            detail: new Audio(URL.createObjectURL(file)),
-                        }),
-                    );
-                });
-            } else {
-                self.info.url = `(online) ${musicurl}`;
-                self.dispatchEvent(
-                    new CustomEvent("updateCurrentAudioPlayer", {
-                        detail: new Audio(musicurl),
-                    }),
-                );
-            }
-            return { cancel: true };
-        },
-        (name, callback, args) => {
-            if (name === "audioplayer.setVolume") {
-                if (self.currentAudioPlayer)
-                    self.currentAudioPlayer.volume = args[2];
-                callback(true);
-                return { cancel: true };
-            }
-        },
-        (name, callback, args) => {
-            if (name === "audioplayer.play") {
-                self.currentAudioId = [args[0], args[1]];
-                if (self.currentAudioPlayer) self.currentAudioPlayer.play();
-
-                callback();
-                return { cancel: true };
-            }
-        },
-        (name, callback, args) => {
-            if (name === "audioplayer.pause") {
-                if (self.currentAudioPlayer) self.currentAudioPlayer.pause();
-                callback();
-                return { cancel: true };
-            }
-        },
-        (name, callback, args) => {
-            if (name === "audioplayer.seek") {
-                if (self.currentAudioPlayer)
-                    self.currentAudioPlayer.currentTime = args[2];
-
-                triggetRegisteredCallback(
-                    "audioplayer.onSeek",
-                    self.currentAudioId[0],
-                    `${self.currentAudioId[0]}|seek|${Math.random()}`,
-                    0,
-                    self.currentAudioPlayer.currentTime,
-                );
-
-                callback();
-                return { cancel: true };
-            }
-        },
-    ]);
-
-    channel.call = createHookFn(channel.call, (name, callback, args) => {
-        console.debug(name);
-        if (name.includes("audio") || name.includes("player")) {
-            console.log(name, callback, args);
-            return {
-                args: [
-                    name,
-                    createHookFn(callback, (...args) => {
-                        console.log("[Callback]", name, args);
-                    }),
-                    args,
-                ],
-            };
-        }
     });
 });
 
@@ -272,14 +261,52 @@ function triggetRegisteredCallback(name, ...args) {
 }
 
 function PluginMenu() {
-    const forceUpdate = useForceUpdate();
-
     const [rows, setRows] = useState([
         {
             name: "无",
             value: "无",
         },
     ]);
+
+    const [enabled, setEnabled] = useLocalStorage(
+        "libfrontendplay.enabled",
+        true,
+    );
+    const [disableNCMCache, setDisableNCMCache] = useLocalStorage(
+        "libfrontendplay.disableNCMCache",
+        true,
+    );
+
+    useEffect(() => {
+        if (enabled) {
+            channel.call("audioplayer.pause", () => {}, ["", ""]);
+            channel.call = hookedNativeCallFunction.function;
+        } else {
+            self.dispatchEvent(
+                new CustomEvent("updateCurrentAudioPlayer", {
+                    detail: new Audio(),
+                }),
+            );
+            channel.call = hookedNativeCallFunction.origin;
+        }
+    }, [enabled]);
+
+    useEffect(() => {
+        if (disableNCMCache) {
+            channel.call("storage.init", (...v) => console.log(v), [
+                "",
+                "0",
+                "",
+            ]);
+            channel.call("storage.clearCache", (...v) => console.log(v), []);
+        } else {
+            channel.call("storage.init", (...v) => console.log(v), [
+                "",
+                "1",
+                "",
+            ]);
+        }
+    }, [disableNCMCache]);
 
     useEffect(() => {
         setInterval(() => {
@@ -294,6 +321,21 @@ function PluginMenu() {
 
     return (
         <>
+            <div>
+                <Switch
+                    name="启用"
+                    checked={enabled}
+                    onChange={(e, checked) => setEnabled(checked)}
+                />
+                <span>启用</span>
+
+                <Switch
+                    name="禁用NCM缓存"
+                    checked={disableNCMCache}
+                    onChange={(e, checked) => setDisableNCMCache(checked)}
+                />
+                <span>禁用NCM缓存</span>
+            </div>
             <div>
                 <TableContainer component={Paper}>
                     <Table sx={{ minWidth: 250 }}>

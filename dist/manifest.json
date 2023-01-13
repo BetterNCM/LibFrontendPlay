@@ -9,5 +9,14 @@
                 "file": "index.js"
             }
         ]
+    },
+    "hijacks":{
+        ">= 2.10.0":{
+            "orpheus://orpheus/pub/hybrid/vendors~app~checkdata~download~login~mp~next-empty~sns~tipbuy.chunk":{
+                "type":"replace",
+                "from":"window.channel.registerCall=function",
+                "to":"window.channel.registerCall=(...args)=>{registeredCalls[args[0]]=registeredCalls[args[0]] || [];registeredCalls[args[0]].push(args[1]);ncmHackChannelFunc(...args);},window.ncmHackChannelFunc=function"
+            }
+        }
     }
 }
