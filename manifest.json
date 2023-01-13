@@ -1,6 +1,6 @@
 {
     "manifest_version": 1,
-    "name": "StyleSnippet",
+    "name": "LibFrontendPlay",
     "version": "0.1.0",
     "author":"MicroBlock",
     "injects": {
