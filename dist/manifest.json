@@ -3,6 +3,8 @@
     "name": "LibFrontendPlay",
     "version": "0.1.0",
     "author":"MicroBlock",
+    "description": "在前端播放音乐，而不是 C++ 后端！\n喵喵喵喵喵喵喵喵",
+    "betterncm_version": ">=1.0.0",
     "injects": {
         "Main": [
             {
