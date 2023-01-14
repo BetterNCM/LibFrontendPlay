@@ -99,8 +99,10 @@ const hookedNativeCallFunction = createHookFn(channel.call, [
     },
     (name, callback, args) => {
         if (name === "audioplayer.setVolume") {
-            if (self.currentAudioPlayer)
+            if (self.currentAudioPlayer){
                 self.currentAudioPlayer.volume = args[2];
+                self.volume = args[2];
+            }
             callback(true);
             return { cancel: true };
         }
@@ -162,6 +164,7 @@ plugin.onLoad(function (selfPlugin) {
             self.currentAudioPlayer.remove();
         }
         self.currentAudioPlayer = event.detail as typeof Audio;
+        self.currentAudioPlayer.volume = self.volume ?? 1;
 
         self.currentAudioPlayer.addEventListener("play", (e) => {
             self.info.playState = 1;
