@@ -79,13 +79,14 @@ const hookedNativeCallFunction = createHookFn(channel.call, [
 
         if (path) {
             self.info.url = `(local) ${path}`;
-            betterncm.fs.readFile(path).then((file) => {
+            betterncm.fs.mountFile(path).then((url)=>{
                 self.dispatchEvent(
                     new CustomEvent("updateCurrentAudioPlayer", {
-                        detail: new Audio(URL.createObjectURL(file)),
+                        detail: new Audio(url),
                     }),
                 );
-            });
+            })
+            
         } else {
             self.info.url = `(online) ${musicurl}`;
             self.dispatchEvent(
