@@ -33,8 +33,27 @@ import {
 } from "@mui/material";
 import { useEffect, useState } from "react";
 
+interface LFPNCMPlugin extends NCMPlugin {
+    currentAudioPlayer: HTMLAudioElement;
+    volume: HTMLAudioElement["volume"];
+    currentAudioId: [string, string];
+    playedTime: number;
+    enabled: boolean;
+    info: {
+        playState: number;
+        lastPlayStartTime: number;
+        playedTime: number;
+        duration: number;
+        playProgress: number;
+        loadProgress: number;
+        currentAudioId: string;
+        url: string;
+        lastError: number | undefined;
+    };
+}
+
 let configElement;
-let self: NCMPlugin;
+let self: LFPNCMPlugin;
 
 if (localStorage["libfrontendplay.debug"] === "true") {
     channel.viewCall().map((v) => {
@@ -62,7 +81,8 @@ const playerElement = document.createElement("div");
 document.body.appendChild(playerElement);
 
 const hookedNativeCallFunction = createHookFn(channel.call, [
-    (name: string, callback: any, [audioId, audioInfo]: any) => {
+    // rome-ignore lint/suspicious/noExplicitAny: <explanation>
+    (name: string, callback: Function, [audioId, audioInfo]: any[]) => {
         if (name !== "audioplayer.load") return;
         self.currentAudioId = [audioId, audioId];
         let {
@@ -79,14 +99,13 @@ const hookedNativeCallFunction = createHookFn(channel.call, [
 
         if (path) {
             self.info.url = `(local) ${path}`;
-            betterncm.fs.mountFile(path).then((url)=>{
+            betterncm.fs.mountFile(path).then((url) => {
                 self.dispatchEvent(
                     new CustomEvent("updateCurrentAudioPlayer", {
                         detail: new Audio(url),
                     }),
                 );
-            })
-            
+            });
         } else {
             self.info.url = `(online) ${musicurl}`;
             self.dispatchEvent(
@@ -99,11 +118,20 @@ const hookedNativeCallFunction = createHookFn(channel.call, [
     },
     (name, callback, args) => {
         if (name === "audioplayer.setVolume") {
-            if (self.currentAudioPlayer){
+            if (self.currentAudioPlayer) {
                 self.currentAudioPlayer.volume = args[2];
                 self.volume = args[2];
             }
             callback(true);
+
+            triggerRegisteredCallback(
+                "audioplayer.onVolume",
+                self.currentAudioId[0],
+                "",
+                0,
+                args[2],
+            );
+
             return { cancel: true };
         }
     },
@@ -151,9 +179,28 @@ const hookedNativeCallFunction = createHookFn(channel.call, [
 
 plugin.onLoad(function (selfPlugin) {
     self = this.mainPlugin;
-    self.info = {};
+    self.info = {
+        playState: 2,
+        lastPlayStartTime: 0,
+        playedTime: 0,
+        duration: 0,
+        playProgress: 0,
+        loadProgress: 0,
+        url: "",
+        currentAudioId: "",
+        lastError: undefined,
+    };
+    self.currentAudioId = ["", ""];
     self.playedTime = 0;
+    self.volume = 0;
     self.enabled = true;
+
+    try {
+        const nmSettingPlayer = JSON.parse(
+            localStorage.getItem("NM_SETTING_PLAYER") || "{}",
+        );
+        self.volume = nmSettingPlayer?.volume ?? 0.5;
+    } catch {}
 
     configElement = document.createElement("div");
     ReactDOM.render(<PluginMenu />, configElement);
@@ -163,8 +210,8 @@ plugin.onLoad(function (selfPlugin) {
             self.currentAudioPlayer.pause();
             self.currentAudioPlayer.remove();
         }
-        self.currentAudioPlayer = event.detail as typeof Audio;
-        self.currentAudioPlayer.volume = self.volume ?? 1;
+        self.currentAudioPlayer = event.detail as HTMLAudioElement;
+        self.currentAudioPlayer.volume = self.volume ?? 0.5;
 
         self.currentAudioPlayer.addEventListener("play", (e) => {
             self.info.playState = 1;
@@ -247,7 +294,9 @@ plugin.onLoad(function (selfPlugin) {
         });
 
         self.currentAudioPlayer.addEventListener("error", (e) => {
-            self.info.lastError = e.currentTarget.error.code;
+            self.info.lastError = (
+                e.currentTarget as HTMLAudioElement
+            ).error?.code;
         });
     });
 });
@@ -293,6 +342,11 @@ function PluginMenu() {
             channel.call("audioplayer.pause", () => {}, ["", ""]);
             channel.call = hookedNativeCallFunction.function;
             self.enabled = true;
+            self.dispatchEvent(
+                new CustomEvent("pluginEnabled", {
+                    detail: new Audio(),
+                }),
+            );
         } else {
             self.dispatchEvent(
                 new CustomEvent("updateCurrentAudioPlayer", {
@@ -300,6 +354,11 @@ function PluginMenu() {
                 }),
             );
             self.enabled = false;
+            self.dispatchEvent(
+                new CustomEvent("pluginDisabled", {
+                    detail: new Audio(),
+                }),
+            );
             channel.call = hookedNativeCallFunction.origin;
         }
     }, [enabled]);
@@ -412,7 +471,8 @@ function PluginMenu() {
                                             {row.name}
                                         </TableCell>
                                         <TableCell align="right">
-                                            {row.value.length > 30 ? (
+                                            {row.value &&
+                                            row.value.length > 30 ? (
                                                 <TextField
                                                     id="standard-basic"
                                                     variant="standard"

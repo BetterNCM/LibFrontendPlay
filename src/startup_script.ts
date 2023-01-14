@@ -12,11 +12,11 @@ import { createHookFn } from "./utils";
 var registeredCalls = {};
 window["registeredCalls"] = registeredCalls;
 channel.registerCall = createHookFn(channel.registerCall, (key, fn) => {
-    registeredCalls[key] ??= []
+    registeredCalls[key] ??= [];
     registeredCalls[key].push(fn);
 }).function;
 
-if (localStorage["libfrontendplay.debug"]==="true") {
+if (localStorage["libfrontendplay.debug"] === "true") {
     channel.call = createHookFn(channel.call, (name, callback, args) => {
         if (name === "audioplayer.onPlayProgress") return;
 

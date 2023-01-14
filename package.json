@@ -5,6 +5,7 @@
   "license": "MIT",
   "scripts": {
     "build": "node ./build.js",
+    "fmt": "rome format --write ./src ./build.js",
     "build:dev": "node ./build.js --dev"
   },
   "dependencies": {

@@ -4,6 +4,9 @@
         "./src/**/*.tsx",
         "./*.css"
     ],
+    "exclude": [
+        "./node_modules/@types/node/**/*.ts"
+    ],
     "compilerOptions": {
         "target": "ESNext",
         "lib": [

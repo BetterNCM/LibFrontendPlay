@@ -1,16 +1,28 @@
 /// <reference types="react" />
 declare module "betterncm-api/utils" {
     export namespace utils {
-        function waitForElement<K extends keyof HTMLElementTagNameMap>(selector: K, interval?: number): Promise<HTMLElementTagNameMap[K] | null>;
-        function waitForElement<K extends keyof SVGElementTagNameMap>(selector: K, interval?: number): Promise<SVGElementTagNameMap[K] | null>;
-        function waitForElement<E extends Element = Element>(selector: string, interval?: number): Promise<E | null>;
+        function waitForElement<K extends keyof HTMLElementTagNameMap>(
+            selector: K,
+            interval?: number,
+        ): Promise<HTMLElementTagNameMap[K] | null>;
+        function waitForElement<K extends keyof SVGElementTagNameMap>(
+            selector: K,
+            interval?: number,
+        ): Promise<SVGElementTagNameMap[K] | null>;
+        function waitForElement<E extends Element = Element>(
+            selector: string,
+            interval?: number,
+        ): Promise<E | null>;
         /**
          * 重复调用某函数，直到其返回任意真值，并返回该真值。
          * @param func 函数
          * @param interval 重复调用时间间隔
          * @returns `func` 函数的返回值
          */
-        function waitForFunction<T>(func: () => T, interval?: number): Promise<T>;
+        function waitForFunction<T>(
+            func: () => T,
+            interval?: number,
+        ): Promise<T>;
         /**
          * 创建一个将在一定时间后 resolve 的 Promise
          * @param ms 延迟时间，以毫秒为单位。
@@ -25,14 +37,21 @@ declare module "betterncm-api/utils" {
          * @param children 元素的子元素，按顺序添加
          * @returns
          */
-        function dom(tag: string, settings: any, ...children: HTMLElement[]): HTMLElement;
+        function dom(
+            tag: string,
+            settings: any,
+            ...children: HTMLElement[]
+        ): HTMLElement;
     }
 }
-declare module "betterncm-api/react" { }
+declare module "betterncm-api/react" {}
 declare module "betterncm-api/base" {
-    export const betterncmFetch: (relPath: string, option?: RequestInit & {
-        ignoreApiKey?: boolean;
-    }) => Promise<Response>;
+    export const betterncmFetch: (
+        relPath: string,
+        option?: RequestInit & {
+            ignoreApiKey?: boolean;
+        },
+    ) => Promise<Response>;
 }
 declare module "betterncm-api/fs" {
     /**
@@ -82,14 +101,20 @@ declare module "betterncm-api/fs" {
          * @param content 需要写入的文件内容
          * @returns 是否成功
          */
-        function writeFileText(filePath: string, content: string): Promise<boolean>;
+        function writeFileText(
+            filePath: string,
+            content: string,
+        ): Promise<boolean>;
         /**
          * 将文本或二进制数据写入到指定文件内
          * @param filePath 需要写入的文件路径
          * @param content 需要写入的文件内容
          * @returns 是否成功
          */
-        function writeFile(filePath: string, content: string | Blob): Promise<boolean>;
+        function writeFile(
+            filePath: string,
+            content: string | Blob,
+        ): Promise<boolean>;
         /**
          * 在指定路径新建文件夹
          * @param dirPath 文件夹的路径
@@ -118,7 +143,11 @@ declare module "betterncm-api/app" {
          * @param showWindow 是否显示控制台窗口
          * @returns TODO: 返回的啥玩意
          */
-        function exec(cmd: string, elevate?: boolean, showWindow?: boolean): Promise<boolean>;
+        function exec(
+            cmd: string,
+            elevate?: boolean,
+            showWindow?: boolean,
+        ): Promise<boolean>;
         /**
          * 获取当前 BetterNCM 的版本号
          * @returns 当前 BetterNCM 的版本号
@@ -183,7 +212,10 @@ declare module "betterncm-api/app" {
          * @param initialDir 对话框初始地址
          * @returns 选择的文件地址，若未选择则为空字符串
          */
-        function openFileDialog(filter: string, initialDir: string): Promise<string>;
+        function openFileDialog(
+            filter: string,
+            initialDir: string,
+        ): Promise<string>;
         /**
          * 获取当前主题是否为亮色主题
          * @todo 测试在 Windows 7 及 Windows 10 下是否正常工作
@@ -199,15 +231,35 @@ declare module "betterncm-api/app" {
 }
 declare module "betterncm-api/ncm" {
     export namespace ncm {
-        function findNativeFunction(obj: Object, identifiers: string): string | undefined;
+        function findNativeFunction(
+            obj: Object,
+            identifiers: string,
+        ): string | undefined;
         function openUrl(url: string): void;
         function getNCMPackageVersion(): string;
         function getNCMFullVersion(): string;
         function getNCMVersion(): string;
         function getNCMBuild(): number;
-        function searchApiFunction(nameOrFinder: string | ((func: Function) => boolean), root?: any, currentPath?: string[], prevObjects?: any[], result?: [Function, any, string[]][]): [Function, any, string[]][];
-        function searchForData(finder: (func: any) => boolean, root?: any, currentPath?: string[], prevObjects?: any[], result?: [any, any, string[]][]): [any, any, string[]][];
-        function findApiFunction(nameOrFinder: string | ((func: Function) => boolean), root?: any, currentPath?: string[], prevObjects?: any[]): [Function, any, string[]] | null;
+        function searchApiFunction(
+            nameOrFinder: string | ((func: Function) => boolean),
+            root?: any,
+            currentPath?: string[],
+            prevObjects?: any[],
+            result?: [Function, any, string[]][],
+        ): [Function, any, string[]][];
+        function searchForData(
+            finder: (func: any) => boolean,
+            root?: any,
+            currentPath?: string[],
+            prevObjects?: any[],
+            result?: [any, any, string[]][],
+        ): [any, any, string[]][];
+        function findApiFunction(
+            nameOrFinder: string | ((func: Function) => boolean),
+            root?: any,
+            currentPath?: string[],
+            prevObjects?: any[],
+        ): [Function, any, string[]] | null;
         /**
          * 获取当前正在播放的歌曲的信息，包括歌曲信息，来源，当前播放状态等
          * @todo 补全返回值类型
@@ -256,9 +308,14 @@ declare module "betterncm-api/index" {
         utils: typeof utils;
         tests: typeof tests;
         reload: typeof reload;
-        betterncmFetch: (relPath: string, option?: (RequestInit & {
-            ignoreApiKey?: boolean | undefined;
-        }) | undefined) => Promise<Response>;
+        betterncmFetch: (
+            relPath: string,
+            option?:
+                | (RequestInit & {
+                      ignoreApiKey?: boolean | undefined;
+                  })
+                | undefined,
+        ) => Promise<Response>;
     };
     export { fs, app, ncm, utils, tests, reload };
     export default BetterNCM;
@@ -291,7 +348,9 @@ declare module "plugin" {
         };
         hijacks: {
             [versionRange: string]: {
-                [matchUrlPath: string]: HijackReplaceOrRegexOperation | HijackAppendOrPrependOperation;
+                [matchUrlPath: string]:
+                    | HijackReplaceOrRegexOperation
+                    | HijackAppendOrPrependOperation;
             };
         };
     }
@@ -303,7 +362,11 @@ declare module "plugin" {
         manifest: PluginManifest;
         finished: boolean;
         devMode: boolean;
-        constructor(manifest: PluginManifest, pluginPath: string, devMode: boolean);
+        constructor(
+            manifest: PluginManifest,
+            pluginPath: string,
+            devMode: boolean,
+        );
         haveConfigElement(): boolean;
     }
     export class NCMInjectPlugin extends EventTarget {
@@ -317,7 +380,12 @@ declare module "plugin" {
         constructor(mainPlugin: NCMPlugin, filePath: string);
         onLoad(fn: (selfPlugin: NCMPlugin, evt: CustomEvent) => void): void;
         onConfig(fn: (toolsBox: any) => HTMLElement): void;
-        onAllPluginsLoaded(fn: (loadedPlugins: typeof window.loadedPlugins, evt: CustomEvent) => void): void;
+        onAllPluginsLoaded(
+            fn: (
+                loadedPlugins: typeof window.loadedPlugins,
+                evt: CustomEvent,
+            ) => void,
+        ): void;
         getConfig<T>(key: string): T | undefined;
         getConfig<T>(key: string, defaultValue: T): T;
         setConfig<T>(key: string, value: T): void;
@@ -325,7 +393,9 @@ declare module "plugin" {
     }
 }
 declare module "plugin-manager/components/button" {
-    export const Button: React.FC<React.PropsWithChildren<React.HTMLAttributes<HTMLAnchorElement>>>;
+    export const Button: React.FC<
+        React.PropsWithChildren<React.HTMLAttributes<HTMLAnchorElement>>
+    >;
 }
 declare module "plugin-manager/components/progress-ring" {
     export const ProgressRing: React.FC<{
@@ -373,7 +443,12 @@ declare module "loader" {
     export class PluginLoadError extends Error {
         readonly pluginPath: string;
         readonly rawError: Error;
-        constructor(pluginPath: string, rawError: Error, message?: string, options?: ErrorOptions);
+        constructor(
+            pluginPath: string,
+            rawError: Error,
+            message?: string,
+            options?: ErrorOptions,
+        );
         toString(): string;
     }
     export class DependencyResolveError extends Error {
@@ -411,5 +486,5 @@ declare const DEBUG: boolean;
 declare var betterncm_native: any;
 declare var channel: any;
 declare var legacyNativeCmder: any;
-declare var registeredCalls:{[id:string]:Function[]}
-declare var APP_CONF:any;
+declare var registeredCalls: { [id: string]: Function[] };
+declare var APP_CONF: any;

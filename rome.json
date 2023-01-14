@@ -4,10 +4,6 @@
         "indentStyle": "space"
     },
     "linter": {
-        "rules": {
-            "suspicious": {
-                "noExplicitAny": "off"
-            }
-        }
+        "rules": {}
     }
 }
