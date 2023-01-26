@@ -39,6 +39,8 @@ interface LFPNCMPlugin extends NCMPlugin {
     currentAudioId: [string, string];
     playedTime: number;
     enabled: boolean;
+    currentAudioContext: AudioContext,
+    currentAudioSource: MediaElementAudioSourceNode,
     info: {
         playState: number;
         lastPlayStartTime: number;
@@ -160,7 +162,7 @@ const hookedNativeCallFunction = createHookFn(channel.call, [
             triggerRegisteredCallback(
                 "audioplayer.onSeek",
                 self.currentAudioId[0],
-                `${self.currentAudioId[0]}|seek|${Math.random().toString(16).slice(2,7)}`,
+                `${self.currentAudioId[0]}|seek|${Math.random().toString(16).slice(2, 7)}`,
                 0,
                 args[2],
             );
@@ -200,7 +202,7 @@ plugin.onLoad(function (selfPlugin) {
             localStorage.getItem("NM_SETTING_PLAYER") || "{}",
         );
         self.volume = nmSettingPlayer?.volume ?? 0.5;
-    } catch {}
+    } catch { }
 
     configElement = document.createElement("div");
     ReactDOM.render(<PluginMenu />, configElement);
@@ -212,6 +214,12 @@ plugin.onLoad(function (selfPlugin) {
         }
         self.currentAudioPlayer = event.detail as HTMLAudioElement;
         self.currentAudioPlayer.volume = self.volume ?? 0.5;
+
+        self.currentAudioContext = self.currentAudioContext || new AudioContext();
+        self.currentAudioSource = self.currentAudioContext.createMediaElementSource(self.currentAudioPlayer);
+        self.currentAudioSource.connect(self.currentAudioContext.destination);
+
+        self.dispatchEvent(new CustomEvent("audioSourceUpdated", { detail: self.currentAudioSource }))
 
         self.currentAudioPlayer.addEventListener("play", (e) => {
             self.info.playState = 1;
@@ -339,7 +347,7 @@ function PluginMenu() {
 
     useEffect(() => {
         if (enabled) {
-            channel.call("audioplayer.pause", () => {}, ["", ""]);
+            channel.call("audioplayer.pause", () => { }, ["", ""]);
             channel.call = hookedNativeCallFunction.function;
             self.enabled = true;
             self.dispatchEvent(
@@ -462,9 +470,9 @@ function PluginMenu() {
                                         key={row.name}
                                         sx={{
                                             "&:last-child td, &:last-child th":
-                                                {
-                                                    border: 0,
-                                                },
+                                            {
+                                                border: 0,
+                                            },
                                         }}
                                     >
                                         <TableCell component="th" scope="row">
@@ -472,7 +480,7 @@ function PluginMenu() {
                                         </TableCell>
                                         <TableCell align="right">
                                             {row.value &&
-                                            row.value.length > 30 ? (
+                                                row.value.length > 30 ? (
                                                 <TextField
                                                     id="standard-basic"
                                                     variant="standard"
