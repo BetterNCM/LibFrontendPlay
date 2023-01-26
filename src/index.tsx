@@ -160,7 +160,7 @@ const hookedNativeCallFunction = createHookFn(channel.call, [
             triggerRegisteredCallback(
                 "audioplayer.onSeek",
                 self.currentAudioId[0],
-                `${self.currentAudioId[0]}|seek|abcde`,
+                `${self.currentAudioId[0]}|seek|${Math.random().toString(16).slice(2,7)}`,
                 0,
                 args[2],
             );
