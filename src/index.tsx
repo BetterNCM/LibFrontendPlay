@@ -101,6 +101,9 @@ const hookedNativeCallFunction = createHookFn(channel.call, [
 
         self.temporaryDisabled = false;
 
+        if (localStorage["libfrontendplay.disableNCMCache"]) 
+            channel.call("storage.clearCache", (...v) => console.log("Clear cache",v), [""]);
+
         if (path) {
             self.info.url = `(local) ${path}`;
             if (path.endsWith(".ncm")) {
@@ -551,6 +554,8 @@ function updatePlayProgress() {
     if (self.info.playProgress !== self.currentAudioPlayer.currentTime) {
         self.info.playProgress = self.currentAudioPlayer.currentTime;
         self.info.loadProgress = loadProgress;
+
+        
 
         triggerRegisteredCallback(
             "audioplayer.onPlayProgress",
