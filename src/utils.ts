@@ -11,6 +11,7 @@ export function createHookFn(
             let prefixResult = {
                 cancel: false,
                 args: undefined,
+                skip: false
             };
 
             let callArgs;
@@ -20,6 +21,7 @@ export function createHookFn(
                 if (prefixResult?.cancel) return;
                 if (prefixResult?.args)
                     callArgs = callArgs ?? prefixResult?.args;
+                if (prefixResult?.skip) break;
             }
             if (callArgs) console.log(callArgs, args);
             let result;

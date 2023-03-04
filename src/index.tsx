@@ -99,8 +99,24 @@ const hookedNativeCallFunction = createHookFn(channel.call, [
             songId,
         } = audioInfo;
 
+        self.temporaryDisabled = false;
+
         if (path) {
             self.info.url = `(local) ${path}`;
+            if (path.endsWith(".ncm")) {
+                self.temporaryDisabled = true;
+                self.info.url = `(local-disabled) ${path}`;
+                self.currentAudioPlayer?.pause();
+
+                self.dispatchEvent(
+                    new CustomEvent("updateCurrentAudioPlayer", {
+                        detail: new Audio(),
+                    }),
+                );
+
+                return { skip: true };
+            }
+
             betterncm.fs.mountFile(path).then((url) => {
                 self.dispatchEvent(
                     new CustomEvent("updateCurrentAudioPlayer", {
@@ -117,6 +133,10 @@ const hookedNativeCallFunction = createHookFn(channel.call, [
             );
         }
         return { cancel: true };
+    },
+    (name) => {
+        if (name !== "audioplayer.load")
+            if (self.temporaryDisabled) return { skip: true };
     },
     (name, callback, args) => {
         if (name === "audioplayer.setVolume") {
@@ -161,8 +181,7 @@ const hookedNativeCallFunction = createHookFn(channel.call, [
 
             triggerRegisteredCallback(
                 "audioplayer.onSeek",
-                self.currentAudioId[0],
-                `${self.currentAudioId[0]}|seek|${Math.random().toString(16).slice(2, 7)}`,
+                ...args,
                 0,
                 args[2],
             );
@@ -170,16 +189,15 @@ const hookedNativeCallFunction = createHookFn(channel.call, [
             return { cancel: true };
         }
     },
-    (name, callback, args) => {
-        if (
-            name === "winhelper.setNativeWindowShow" &&
-            args[0] === "desktop_lyrics"
-        )
-            return { args: [name, callback, [args[0], false, args[2]]] };
-    },
 ]);
 
 plugin.onLoad(function (selfPlugin) {
+    (betterncm_native as any).audio = {
+        getFFTData() { return [] },
+        acquireFFTData() { },
+        releaseFFTData() { }
+    }
+
     self = this.mainPlugin;
     self.info = {
         playState: 2,
@@ -196,6 +214,7 @@ plugin.onLoad(function (selfPlugin) {
     self.playedTime = 0;
     self.volume = 0;
     self.enabled = true;
+    self.temporaryDisabled = false;
 
     try {
         const nmSettingPlayer = JSON.parse(
@@ -213,11 +232,27 @@ plugin.onLoad(function (selfPlugin) {
             self.currentAudioPlayer.remove();
         }
         self.currentAudioPlayer = event.detail as HTMLAudioElement;
+        self.currentAudioPlayer.preload = "auto"
         self.currentAudioPlayer.volume = self.volume ?? 0.5;
 
-        self.currentAudioContext = self.currentAudioContext || new AudioContext();
+        self.currentAudioContext = self.currentAudioContext ?? new AudioContext();
+        self.currentAudioAnalyser = self.currentAudioAnalyser ?? self.currentAudioContext.createAnalyser();
         self.currentAudioSource = self.currentAudioContext.createMediaElementSource(self.currentAudioPlayer);
-        self.currentAudioSource.connect(self.currentAudioContext.destination);
+        self.currentAudioSource.connect(self.currentAudioAnalyser);
+        self.currentAudioAnalyser.connect(self.currentAudioContext.destination);
+        self.getFFTData = () => {
+            const data = new Uint8Array(self.currentAudioAnalyser.frequencyBinCount);
+            self.currentAudioAnalyser.getByteFrequencyData(data);
+            return data;
+        }
+
+        // polyfills for amll
+        (betterncm_native as any).audio = {
+            getFFTData: self.getFFTData,
+            acquireFFTData() { },
+            releaseFFTData() { }
+        };
+        (betterncm as any).isMRBNCM = true;
 
         self.dispatchEvent(new CustomEvent("audioSourceUpdated", { detail: self.currentAudioSource }))
 
@@ -370,6 +405,7 @@ function PluginMenu() {
             channel.call = hookedNativeCallFunction.origin;
         }
     }, [enabled]);
+
 
     useEffect(() => {
         if (disableNCMCache) {
