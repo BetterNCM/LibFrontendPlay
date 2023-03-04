@@ -79,6 +79,7 @@ if (localStorage["libfrontendplay.debug"] === "true") {
     });
 }
 
+
 const playerElement = document.createElement("div");
 document.body.appendChild(playerElement);
 
@@ -101,8 +102,8 @@ const hookedNativeCallFunction = createHookFn(channel.call, [
 
         self.temporaryDisabled = false;
 
-        if (localStorage["libfrontendplay.disableNCMCache"]) 
-            channel.call("storage.clearCache", (...v) => console.log("Clear cache",v), [""]);
+        if (localStorage["libfrontendplay.disableNCMCache"])
+            channel.call("storage.clearCache", (...v) => console.log("Clear cache", v), [""]);
 
         if (path) {
             self.info.url = `(local) ${path}`;
@@ -195,6 +196,33 @@ const hookedNativeCallFunction = createHookFn(channel.call, [
 ]);
 
 plugin.onLoad(function (selfPlugin) {
+
+    const style = document.createElement("style");
+    style.innerHTML = `
+.n-setcnt .normal.u-cklist{
+    position: relative;
+}
+.n-setcnt .normal.u-cklist::after {
+    position: absolute;
+    content:"已被 LibFrontendPlay 禁用";
+    font-size: 30px;
+    font-weight: 700;
+    background:#ffffff29;
+    left: -10px;
+    right: 0px;
+    height: 55%;
+    bottom: -20px;
+    border: 1px solid #bbbbbb24;
+    border-radius: 10px;
+    backdrop-filter: brightness(0.3);
+    z-index: 9999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+`;
+    document.head.appendChild(style);
+
     (betterncm_native as any).audio = {
         getFFTData() { return [] },
         acquireFFTData() { },
@@ -555,7 +583,7 @@ function updatePlayProgress() {
         self.info.playProgress = self.currentAudioPlayer.currentTime;
         self.info.loadProgress = loadProgress;
 
-        
+
 
         triggerRegisteredCallback(
             "audioplayer.onPlayProgress",
