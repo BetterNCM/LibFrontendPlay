@@ -266,11 +266,12 @@ plugin.onLoad(function (selfPlugin) {
         self.currentAudioPlayer.preload = "auto"
         self.currentAudioPlayer.volume = self.volume ?? 0.5;
 
-        self.currentAudioContext = self.currentAudioContext ?? new AudioContext();
-        self.currentAudioAnalyser = self.currentAudioAnalyser ?? self.currentAudioContext.createAnalyser();
+        self.currentAudioContext = new AudioContext();
+        self.currentAudioAnalyser = self.currentAudioContext.createAnalyser();
         self.currentAudioSource = self.currentAudioContext.createMediaElementSource(self.currentAudioPlayer);
-        self.currentAudioSource.connect(self.currentAudioAnalyser);
         self.currentAudioAnalyser.connect(self.currentAudioContext.destination);
+        self.currentAudioSource.connect(self.currentAudioAnalyser);
+        
         self.getFFTData = () => {
             const data = new Uint8Array(self.currentAudioAnalyser.frequencyBinCount);
             self.currentAudioAnalyser.getByteFrequencyData(data);
