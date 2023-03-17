@@ -60,6 +60,7 @@ let self: LFPNCMPlugin;
 if (localStorage["libfrontendplay.debug"] === "true") {
     channel.viewCall().map((v) => {
         const [namespace, fn] = v.split(".");
+        if (fn.includes("PlayProgress")) return;
         if (namespace.includes("audio") || namespace.includes("player"))
             legacyNativeCmder.appendRegisterCall(
                 fn.slice(2),
@@ -84,6 +85,10 @@ const playerElement = document.createElement("div");
 document.body.appendChild(playerElement);
 
 const hookedNativeCallFunction = createHookFn(channel.call, [
+    (name, callback, args) => {
+        if (localStorage["libfrontendplay.disableNCMLocalFile"] === 'false' || name !== "storage.checkFilesExist") return;
+        return { args: [name, callback, args.map(v => v.endsWith(".ncm") ? v + '.nooo-this-doesnt-exists' : v)] };
+    },
     // rome-ignore lint/suspicious/noExplicitAny: <explanation>
     (name: string, callback: Function, [audioId, audioInfo]: any[]) => {
         if (name !== "audioplayer.load") return;
@@ -271,7 +276,7 @@ plugin.onLoad(function (selfPlugin) {
         self.currentAudioSource = self.currentAudioContext.createMediaElementSource(self.currentAudioPlayer);
         self.currentAudioAnalyser.connect(self.currentAudioContext.destination);
         self.currentAudioSource.connect(self.currentAudioAnalyser);
-        
+
         self.getFFTData = () => {
             const data = new Uint8Array(self.currentAudioAnalyser.frequencyBinCount);
             self.currentAudioAnalyser.getByteFrequencyData(data);
@@ -399,6 +404,12 @@ function PluginMenu() {
         "libfrontendplay.disableNCMCache",
         true,
     );
+    const [disableNCMLocalFile, setDisableNCMLocalFile] = useLocalStorage(
+        "libfrontendplay.disableNCMLocalFile",
+        true,
+    );
+
+
 
     const [progressCallbackInterval, setProgressCallbackInterval] =
         useLocalStorage("libfrontendplay.progressCallbackInterval", 100);
@@ -498,7 +509,14 @@ function PluginMenu() {
                         checked={disableNCMCache}
                         onChange={(e, checked) => setDisableNCMCache(checked)}
                     />
-                    <span>禁用NCM缓存</span>
+                    <span>禁用 NCM 缓存</span>
+
+                    <Switch
+                        name="禁止读取本地 .ncm 文件"
+                        checked={disableNCMLocalFile}
+                        onChange={(e, checked) => setDisableNCMLocalFile(checked)}
+                    />
+                    <span>禁止读取本地 .ncm 文件</span>
                 </div>
 
                 {enabled && (
