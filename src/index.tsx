@@ -300,7 +300,7 @@ plugin.onLoad(function (selfPlugin) {
             triggerRegisteredCallback(
                 "audioplayer.onPlayState",
                 self.currentAudioId[0],
-                self.currentAudioId[1],
+                self.currentAudioId[1].replace(/\|(\S+)\|/,`|resume|`),
                 1,
             );
         });
@@ -340,7 +340,7 @@ plugin.onLoad(function (selfPlugin) {
             triggerRegisteredCallback(
                 "audioplayer.onPlayState",
                 self.currentAudioId[0],
-                self.currentAudioId[1],
+                self.currentAudioId[1].replace(/\|(\S+)\|/,`|pause|`),
                 2,
             );
         });
