@@ -32,6 +32,7 @@ import {
     Slider,
 } from "@mui/material";
 import { useEffect, useState } from "react";
+import { checkHijack } from "./hijack_checker";
 
 interface LFPNCMPlugin extends NCMPlugin {
     currentAudioPlayer: HTMLAudioElement;
@@ -85,13 +86,10 @@ const playerElement = document.createElement("div");
 document.body.appendChild(playerElement);
 
 const hookedNativeCallFunction = createHookFn(channel.call, [
-    (name, callback, args) => {
-        if (localStorage["libfrontendplay.disableNCMLocalFile"] === 'false' || name !== "storage.checkFilesExist") return;
-        return { args: [name, callback, args.map(v => v.endsWith(".ncm") ? v + '.nooo-this-doesnt-exists' : v)] };
-    },
     // rome-ignore lint/suspicious/noExplicitAny: <explanation>
     (name: string, callback: Function, [audioId, audioInfo]: any[]) => {
         if (name !== "audioplayer.load") return;
+
         self.currentAudioId = [audioId, audioId];
         let {
             bitrate,
@@ -300,7 +298,7 @@ plugin.onLoad(function (selfPlugin) {
             triggerRegisteredCallback(
                 "audioplayer.onPlayState",
                 self.currentAudioId[0],
-                self.currentAudioId[1].replace(/\|(\S+)\|/,`|resume|`),
+                self.currentAudioId[1].replace(/\|(\S+)\|/, `|resume|`),
                 1,
             );
         });
@@ -340,7 +338,7 @@ plugin.onLoad(function (selfPlugin) {
             triggerRegisteredCallback(
                 "audioplayer.onPlayState",
                 self.currentAudioId[0],
-                self.currentAudioId[1].replace(/\|(\S+)\|/,`|pause|`),
+                self.currentAudioId[1].replace(/\|(\S+)\|/, `|pause|`),
                 2,
             );
         });
@@ -379,6 +377,8 @@ plugin.onLoad(function (selfPlugin) {
             ).error?.code;
         });
     });
+
+    checkHijack();
 });
 
 function triggerRegisteredCallback(name, ...args) {
@@ -513,8 +513,9 @@ function PluginMenu() {
 
                     <Switch
                         name="禁止读取本地 .ncm 文件"
-                        checked={disableNCMLocalFile}
-                        onChange={(e, checked) => setDisableNCMLocalFile(checked)}
+                        checked={true}
+                        disabled={true}
+                    // onChange={(e, checked) => setDisableNCMLocalFile(checked)}
                     />
                     <span>禁止读取本地 .ncm 文件</span>
                 </div>

@@ -13,24 +13,6 @@ var registeredCalls = {};
 window["registeredCalls"] = registeredCalls;
 channel.registerCall = createHookFn(channel.registerCall, (key, fn) => {
     registeredCalls[key] ??= [];
-    if (key === "storage.onexecsqldone") {
-        const hookCallbackFn = createHookFn(fn, (...args) => {
-            const id = args.filter(v => typeof v === "string").join("-");
-            if (localStorage["libfrontendplay.disableNCMLocalFile"] !== 'false' && id.includes("ffline"))
-                return {
-                    args: [...args.map(arg => {
-                        if (arg instanceof Array) {
-                            const origLength = arg.length;
-                            arg = arg.filter(item => !item.relative_path?.endsWith(".ncm"))
-
-                            console.log(`[LFP] Patched exec sql done [${id}] result: ${origLength} -> ${arg.length}`, arg);
-                        }
-                        return arg;
-                    })]
-                }
-        });
-        return { args: [key, hookCallbackFn.function] }
-    }
     registeredCalls[key].push(fn);
 }).function;
 
