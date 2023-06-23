@@ -1,7 +1,7 @@
 {
     "manifest_version": 1,
     "name": "LibFrontendPlay",
-    "version": "1.1.0",
+    "version": "1.1.1",
     "author": "MicroBlock",
     "description": "在前端播放音乐，而不是 C++ 后端！\n【支持 AMLL 音频可视化视效，支持 VIP 歌曲】",
     "betterncm_version": ">=1.0.0",
@@ -12,8 +12,9 @@
             }
         ]
     },
+    "ncm3-compatible":true,
     "hijacks": {
-        ">= 2.10.0": {
+        ">= 2.10.0 < 3.0.0": {
             "orpheus://orpheus/pub/hybrid/vendors~app~checkdata~download~login~mp~next-empty~sns~tipbuy.chunk": [
                 {
                     "type": "replace",
