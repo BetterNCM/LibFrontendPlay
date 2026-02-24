@@ -141,6 +141,7 @@ const hookedNativeCallFunction = createHookFn(channel.call, [
 
             betterncm.fs.mountFile(path).then((url) => {
                 const audio = new Audio(url);
+                audio.crossOrigin = "anonymous";
                 self.dispatchEvent(
                     new CustomEvent("updateCurrentAudioPlayer", {
                         detail: audio,
@@ -150,6 +151,7 @@ const hookedNativeCallFunction = createHookFn(channel.call, [
         } else {
             self.info.url = `(online) ${musicurl}`;
             const audio = new Audio(musicurl);
+            audio.crossOrigin = "anonymous";
             self.dispatchEvent(
                 new CustomEvent("updateCurrentAudioPlayer", {
                     detail: audio,
@@ -233,13 +235,6 @@ plugin.onLoad(function (selfPlugin) {
 `;
     document.head.appendChild(style);
 
-    // 初始化 polyfills
-    (betterncm_native as any).audio = {
-        getFFTData() { return [] },
-        acquireFFTData() { },
-        releaseFFTData() { }
-    };
-
     self = this.mainPlugin;
     self.info = {
         playState: 2,
@@ -251,6 +246,13 @@ plugin.onLoad(function (selfPlugin) {
         url: "",
         currentAudioId: "",
         lastError: undefined,
+    };
+
+    // 初始化 polyfills
+    (betterncm_native as any).audio = {
+        getFFTData: () => self?.getFFTData ? self.getFFTData() : new Uint8Array(0),
+        acquireFFTData() { },
+        releaseFFTData() { }
     };
     self.currentAudioId = ["", ""];
     self.playedTime = 0;
@@ -309,12 +311,6 @@ plugin.onLoad(function (selfPlugin) {
             return data;
         }
 
-        // 更新 polyfills
-        (betterncm_native as any).audio = {
-            getFFTData: self.getFFTData,
-            acquireFFTData() { },
-            releaseFFTData() { }
-        };
         (betterncm as any).isMRBNCM = true;
 
         self.dispatchEvent(new CustomEvent("audioSourceUpdated", { detail: self.currentAudioSource }))
