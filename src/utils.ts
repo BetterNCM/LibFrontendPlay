@@ -1,3 +1,9 @@
+/**
+ * 创建钩子函数，用于拦截和修改原有函数调用
+ * @param fn 原函数
+ * @param prefixs 前置处理函数（返回 {cancel: true} 可拦截）
+ * @param postfixs 后置处理函数
+ */
 export function createHookFn(
     fn: Function,
     prefixs?: Function | Function[],
@@ -23,7 +29,7 @@ export function createHookFn(
                     callArgs = callArgs ?? prefixResult?.args;
                 if (prefixResult?.skip) break;
             }
-            if (callArgs) console.log(callArgs, args);
+            
             let result;
             result = fn.apply(this, callArgs ?? args);
 
